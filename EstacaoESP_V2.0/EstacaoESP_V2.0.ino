@@ -5,10 +5,25 @@
 #include "Adafruit_Si7021.h"
 #include <ThingsBoard.h>
 
+#include <HTTPClient.h>
+#include <HTTPUpdate.h>
+
+#include "cert.h"
+
 void InitWiFi(); // declaração das funções
 void reconnect();
 void isr_rg();
 void getRain();
+void firmwareUpdate();
+int FirmwareVersionCheck();
+
+unsigned long previousMillis = 0; // will store last time LED was updated
+unsigned long previousMillis_2 = 0;
+const long interval = 60000;
+const long mini_interval = 1000;
+
+#define URL_fw_Version "https://github.com/EvertonLucasGomes/Arduino_OTA/blob/main/bin_version.txt"
+#define URL_fw_Bin "https://github.com/EvertonLucasGomes/Arduino_OTA/blob/main/fw.bin"
 
 #define SECRET_SSID "brisa-914290" // data Internet
 #define SECRET_PASS "ea97ytxu"
@@ -57,7 +72,6 @@ void setup(void) {
     tempRain++;
   }
 
-  // Connect to WiFi network
   WiFi.begin(ssid, pass);
   InitWiFi();
   
@@ -73,6 +87,12 @@ void setup(void) {
   Serial.println(ssid);
   Serial.print("IP address: ");
   Serial.println(WiFi.localIP());
+  
+  if (FirmwareVersionCheck()) {
+      firmwareUpdate();
+    }
+
+  // Connect to WiFi network
 
   if (!tb.connected())
   { //verifica conexão thingsboard
@@ -121,7 +141,6 @@ void setup(void) {
 void loop(void) {
   
 }
-
 
 void InitWiFi() //conexão Wi-fi
 {
@@ -172,4 +191,78 @@ void getRain(void)
   tempRain = 0;
 
   sei(); //habilita interrupções
+}
+
+void firmwareUpdate(void) {
+  WiFiClientSecure client;
+  client.setCACert(rootCACertificate);
+  httpUpdate.setLedPin(LED_BUILTIN, LOW);
+  t_httpUpdate_return ret = httpUpdate.update(client, URL_fw_Bin);
+
+  switch (ret) {
+  case HTTP_UPDATE_FAILED:
+    Serial.printf("HTTP_UPDATE_FAILD Error (%d): %s\n", httpUpdate.getLastError(), httpUpdate.getLastErrorString().c_str());
+    break;
+
+  case HTTP_UPDATE_NO_UPDATES:
+    Serial.println("HTTP_UPDATE_NO_UPDATES");
+    break;
+
+  case HTTP_UPDATE_OK:
+    Serial.println("HTTP_UPDATE_OK");
+    break;
+  }
+}
+
+int FirmwareVersionCheck(void) {
+  String payload;
+  int httpCode;
+  String fwurl = "";
+  fwurl += URL_fw_Version;
+  fwurl += "?";
+  fwurl += String(rand());
+  Serial.println(fwurl);
+  WiFiClientSecure * client = new WiFiClientSecure;
+
+  if (client) 
+  {
+    client -> setCACert(rootCACertificate);
+
+    // Add a scoping block for HTTPClient https to make sure it is destroyed before WiFiClientSecure *client is 
+    HTTPClient https;
+
+    if (https.begin( * client, fwurl)) 
+    { // HTTPS      
+      Serial.print("[HTTPS] GET...\n");
+      // start connection and send HTTP header
+      delay(100);
+      httpCode = https.GET();
+      delay(100);
+      if (httpCode == HTTP_CODE_OK) // if version received
+      {
+        payload = https.getString(); // save received version
+      } else {
+        Serial.print("error in downloading version file:");
+        Serial.println(httpCode);
+      }
+      https.end();
+    }
+    delete client;
+  }
+      
+  if (httpCode == HTTP_CODE_OK) // if version received
+  {
+    payload.trim();
+    if (payload.equals(FirmwareVer)) {
+      Serial.printf("\nDevice already on latest firmware version:%s\n", FirmwareVer);
+      return 0;
+    } 
+    else 
+    {
+      Serial.println(payload);
+      Serial.println("New firmware detected");
+      return 1;
+    }
+  } 
+  return 0;  
 }
