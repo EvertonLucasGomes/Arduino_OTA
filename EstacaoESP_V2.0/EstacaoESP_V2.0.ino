@@ -1,36 +1,15 @@
 #include <WiFi.h>
-#include <Wire.h>
-#include <Adafruit_Sensor.h>
+#include <HTTPClient.h>
+#include <HTTPUpdate.h>
+#include <WiFiClientSecure.h>
+#include "cert.h"
+
 #include <Adafruit_BMP280.h>
 #include "Adafruit_Si7021.h"
 #include <ThingsBoard.h>
 
-#include <HTTPClient.h>
-#include <HTTPUpdate.h>
-
-#include "cert.h"
-
-void InitWiFi(); // declaração das funções
-void reconnect();
-void isr_rg();
-void getRain();
-void firmwareUpdate();
-int FirmwareVersionCheck();
-
-unsigned long previousMillis = 0; // will store last time LED was updated
-unsigned long previousMillis_2 = 0;
-const long interval = 60000;
-const long mini_interval = 1000;
-
-#define URL_fw_Version "https://github.com/EvertonLucasGomes/Arduino_OTA/blob/main/bin_version.txt"
-#define URL_fw_Bin "https://github.com/EvertonLucasGomes/Arduino_OTA/blob/main/fw.bin"
-
 #define SECRET_SSID "brisa-914290" // data Internet
 #define SECRET_PASS "ea97ytxu"
-
-const char* host = "esp32";
-char ssid[] = SECRET_SSID; // variáveis de conexão ao WiFi
-char pass[] = SECRET_PASS;
 
 #define Token "rWxfsfvfCiA10Bp8EtU0" // data thingsboard / token do canal thingsboard
 #define THINGSBOARD_SERVER "eltontorres.asuscomm.com"
@@ -58,7 +37,24 @@ ThingsBoard tb(cliente);
 int status = WL_IDLE_STATUS; // status conexão WiFi
 bool subscribed = false;     // status Thingsboard
 
-void setup(void) {
+char ssid[] = SECRET_SSID; // variáveis de conexão ao WiFi
+char pass[] = SECRET_PASS;
+
+String FirmwareVer = {
+  "1.0"
+};
+
+#define URL_fw_Version "https://github.com/EvertonLucasGomes/Arduino_OTA/blob/main/bin_version.txt"
+#define URL_fw_Bin "https://github.com/EvertonLucasGomes/Arduino_OTA/blob/main/fw.bin"
+
+void reconnect();
+void isr_rg();
+void getRain();
+void connect_wifi();
+void firmwareUpdate();
+int FirmwareVersionCheck();
+
+void setup() {
   Serial.begin(SERIAL_DEBUG_BAUD);
 
   pinMode(RainSensorPin, INPUT_PULLUP);
@@ -71,9 +67,8 @@ void setup(void) {
   if(esp_sleep_get_wakeup_cause() == ESP_SLEEP_WAKEUP_EXT0){
     tempRain++;
   }
-
-  WiFi.begin(ssid, pass);
-  InitWiFi();
+  
+  connect_wifi();
   
   // Wait for connection
   if (WiFi.status() != WL_CONNECTED)
@@ -138,21 +133,22 @@ void setup(void) {
   esp_deep_sleep_start();
 }
 
-void loop(void) {
+void loop() {
   
 }
 
-void InitWiFi() //conexão Wi-fi
-{
-  Serial.println("Conectando ao Wi-Fi ...");
-
+void connect_wifi() {
+  Serial.println("Waiting for WiFi");
   WiFi.begin(ssid, pass);
-  while (WiFi.status() != WL_CONNECTED)
-  {
+  while (WiFi.status() != WL_CONNECTED) {
     delay(500);
     Serial.print(".");
   }
-  Serial.println("Conexão bem sucedida");
+
+  Serial.println("");
+  Serial.println("WiFi connected");
+  Serial.println("IP address: ");
+  Serial.println(WiFi.localIP());
 }
 
 void reconnect()
@@ -213,7 +209,6 @@ void firmwareUpdate(void) {
     break;
   }
 }
-
 int FirmwareVersionCheck(void) {
   String payload;
   int httpCode;
