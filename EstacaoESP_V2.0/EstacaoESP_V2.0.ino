@@ -9,7 +9,7 @@
 #include <ThingsBoard.h>
 
 #define SECRET_SSID "brisa-914290" // data Internet
-#define SECRET_PASS "ea97ytxu"
+#define SECRET_PASS "2irq3swu"
 
 #define Token "rWxfsfvfCiA10Bp8EtU0" // data thingsboard / token do canal thingsboard
 #define THINGSBOARD_SERVER "eltontorres.asuscomm.com"
@@ -26,7 +26,7 @@ volatile unsigned long tempRain; // quantidade de vezes que a balança do pluvio
 float rain = 0; // Chuva temporario no período de loop, calculo total feito na plataforma thingsboard
 
 #define uS_TO_S_FACTOR 1000000 // Fator de conversão de micro segundos para segundos
-#define TIME_TO_SLEEP 20       // tempo de sleep em segundos
+#define TIME_TO_SLEEP 60       // tempo de sleep em segundos
 
 Adafruit_BMP280 bmpSensor; //objetos de comunicação com os sensores
 Adafruit_Si7021 siSensor = Adafruit_Si7021();
@@ -44,8 +44,8 @@ String FirmwareVer = {
   "1.0"
 };
 
-#define URL_fw_Version "https://github.com/EvertonLucasGomes/Arduino_OTA/blob/main/bin_version.txt"
-#define URL_fw_Bin "https://github.com/EvertonLucasGomes/Arduino_OTA/blob/main/fw.bin"
+#define URL_fw_Version "https://raw.githubusercontent.com/EvertonLucasGomes/Arduino_OTA/main/bin_version.txt"
+#define URL_fw_Bin "https://raw.githubusercontent.com/EvertonLucasGomes/Arduino_OTA/main/fw.bin"
 
 void reconnect();
 void isr_rg();
@@ -236,6 +236,7 @@ int FirmwareVersionCheck(void) {
       if (httpCode == HTTP_CODE_OK) // if version received
       {
         payload = https.getString(); // save received version
+        Serial.println(payload);
       } else {
         Serial.print("error in downloading version file:");
         Serial.println(httpCode);
