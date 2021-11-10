@@ -8,8 +8,8 @@
 #include "Adafruit_Si7021.h"
 #include <ThingsBoard.h>
 
-#define SECRET_SSID "brisa-914290"                               // Dados da Internet
-#define SECRET_PASS "2irq3swu"
+#define SECRET_SSID "ebt-mi8"                               // Dados da Internet
+#define SECRET_PASS "ebtwifimi8"
 
 #define Token "rWxfsfvfCiA10Bp8EtU0"                            // dados do thingsboard / token do canal thingsboard
 #define THINGSBOARD_SERVER "eltontorres.asuscomm.com"
@@ -40,7 +40,7 @@ char ssid[] = SECRET_SSID;                                 // variáveis de cone
 char pass[] = SECRET_PASS;
 
 String FirmwareVer = {                                     // versão do firmware
-  "3.0"
+  "4.0"
 };
 
 #define URL_fw_Version "https://raw.githubusercontent.com/EvertonLucasGomes/Arduino_OTA/main/bin_version.txt"       // path do github
