@@ -8,49 +8,48 @@
 #include "Adafruit_Si7021.h"
 #include <ThingsBoard.h>
 
-#define SECRET_SSID "brisa-914290" // data Internet
+#define SECRET_SSID "brisa-914290"                               // Dados da Internet
 #define SECRET_PASS "2irq3swu"
 
-#define Token "rWxfsfvfCiA10Bp8EtU0" // data thingsboard / token do canal thingsboard
+#define Token "rWxfsfvfCiA10Bp8EtU0"                            // dados do thingsboard / token do canal thingsboard
 #define THINGSBOARD_SERVER "eltontorres.asuscomm.com"
 #define SERIAL_DEBUG_BAUD 115200
 
-int RainSensorPin = 33; // Rain REED-ILS sensor GPIO 21 on ESP32
+int RainSensorPin = 33;                                        // Rain REED-ILS sensor GPIO 21 on ESP32
 
-volatile unsigned long contactTime; // tempo de debounce
+volatile unsigned long contactTime;                            // tempo de debounce
 
-volatile unsigned long tempRain; // quantidade de vezes que a balança do pluviometro girou
+volatile unsigned long tempRain;                              // quantidade de vezes que a balança do pluviometro girou
 
-#define Bucket_Size_EU 0.2 // tamanho do bucket do pluviometro
+#define Bucket_Size_EU 0.2                                   // tamanho do bucket do pluviometro
 
-float rain = 0; // Chuva temporario no período de loop, calculo total feito na plataforma thingsboard
+float rain = 0;                                              // Chuva temporario no período de loop, calculo total feito na plataforma thingsboard
 
-#define uS_TO_S_FACTOR 1000000 // Fator de conversão de micro segundos para segundos
-#define TIME_TO_SLEEP 60       // tempo de sleep em segundos
+#define uS_TO_S_FACTOR 1000000                               // Fator de conversão de micro segundos para segundos
+#define TIME_TO_SLEEP 60                                     // tempo de sleep em segundos
 
-Adafruit_BMP280 bmpSensor; //objetos de comunicação com os sensores
+Adafruit_BMP280 bmpSensor;                                   //objetos de comunicação com os sensores
 Adafruit_Si7021 siSensor = Adafruit_Si7021();
 
-WiFiClient cliente; // objetos WiFi e Thingsboard
+WiFiClient cliente;                                         // objetos WiFi e Thingsboard
 ThingsBoard tb(cliente);
 
-int status = WL_IDLE_STATUS; // status conexão WiFi
-bool subscribed = false;     // status Thingsboard
+int status = WL_IDLE_STATUS;                               // status conexão WiFi
 
-char ssid[] = SECRET_SSID; // variáveis de conexão ao WiFi
+char ssid[] = SECRET_SSID;                                 // variáveis de conexão ao WiFi
 char pass[] = SECRET_PASS;
 
-String FirmwareVer = {
+String FirmwareVer = {                                     // versão do firmware
   "3.0"
 };
 
-#define URL_fw_Version "https://raw.githubusercontent.com/EvertonLucasGomes/Arduino_OTA/main/bin_version.txt"
+#define URL_fw_Version "https://raw.githubusercontent.com/EvertonLucasGomes/Arduino_OTA/main/bin_version.txt"       // path do github
 #define URL_fw_Bin "https://raw.githubusercontent.com/EvertonLucasGomes/Arduino_OTA/main/fw.bin"
 
-void reconnect();
-void isr_rg();
-void getRain();
 void connect_wifi();
+void reconnect();                                         // funções
+void forceIncrement();
+void getRain();
 void firmwareUpdate();
 int FirmwareVersionCheck();
 
@@ -60,21 +59,20 @@ void setup() {
   Serial.print("Bela Atualização");
 
   pinMode(RainSensorPin, INPUT_PULLUP);
-  attachInterrupt(digitalPinToInterrupt(RainSensorPin), isr_rg, FALLING);
+  attachInterrupt(digitalPinToInterrupt(RainSensorPin), forceIncrement, FALLING);        // caso especial force increment
 
-  esp_sleep_enable_timer_wakeup(TIME_TO_SLEEP * uS_TO_S_FACTOR);
+  esp_sleep_enable_timer_wakeup(TIME_TO_SLEEP * uS_TO_S_FACTOR);            // tempo deepSleep
 
-  esp_sleep_enable_ext0_wakeup(GPIO_NUM_33,0);
+  esp_sleep_enable_ext0_wakeup(GPIO_NUM_33,0);                              // fator do pluviometro
 
-  if(esp_sleep_get_wakeup_cause() == ESP_SLEEP_WAKEUP_EXT0){
+  if(esp_sleep_get_wakeup_cause() == ESP_SLEEP_WAKEUP_EXT0){                // incremento pluviometro
     tempRain++;
   }
   
-  connect_wifi();
+  connect_wifi();                                            // conexão com wi-fi            
   
-  // Wait for connection
-  if (WiFi.status() != WL_CONNECTED)
-  { //verifica conexão Wi-Fi
+  if (WiFi.status() != WL_CONNECTED)                         //verifica conexão Wi-Fi
+  { 
     reconnect();
     return;
   }
@@ -85,16 +83,14 @@ void setup() {
   Serial.print("IP address: ");
   Serial.println(WiFi.localIP());
   
-  if (FirmwareVersionCheck()) {
+  if (FirmwareVersionCheck()) {                           // checagem de versão
       firmwareUpdate();
     }
 
   // Connect to WiFi network
 
-  if (!tb.connected())
-  { //verifica conexão thingsboard
-    subscribed = false;
-
+  if (!tb.connected())                                  //verifica conexão thingsboard
+  { 
     Serial.print("Conectando a: ");
     Serial.print(THINGSBOARD_SERVER);
     Serial.print("token: ");
@@ -105,7 +101,7 @@ void setup() {
       delay(5000);
       return;
     }
-    getRain(); //envio de dados do sensor BMP280
+    getRain(); //envio de dados do sensor BMP280             // envio de dados
     Serial.println(rain);
     tb.sendTelemetryFloat("pluviometer", rain);
 
@@ -168,7 +164,7 @@ void reconnect()
   }
 }
 
-void isr_rg()
+void forceIncrement()
 {
 
   if ((millis() - contactTime) > 500)
@@ -211,6 +207,7 @@ void firmwareUpdate(void) {
     break;
   }
 }
+
 int FirmwareVersionCheck(void) {
   String payload;
   int httpCode;
@@ -225,21 +222,20 @@ int FirmwareVersionCheck(void) {
   {
     client -> setCACert(rootCACertificate);
 
-    // Add a scoping block for HTTPClient https to make sure it is destroyed before WiFiClientSecure *client is 
     HTTPClient https;
 
-    if (https.begin( * client, fwurl)) 
-    { // HTTPS      
+    if (https.begin( * client, fwurl))  // conexão HTTPS   
+    {    
       Serial.print("[HTTPS] GET...\n");
-      // start connection and send HTTP header
+      // 
       delay(100);
-      httpCode = https.GET();
+      httpCode = https.GET();                                  // estabelecendo conexão
       delay(100);
-      if (httpCode == HTTP_CODE_OK) // if version received
+      if (httpCode == HTTP_CODE_OK)                             // versão recebida
       {
-        payload = https.getString(); // save received version
+        payload = https.getString();                           // obtenção dos dados
         Serial.println(payload);
-      } else {
+      } else {                                                 // erro
         Serial.print("error in downloading version file:");
         Serial.println(httpCode);
       }
@@ -248,7 +244,7 @@ int FirmwareVersionCheck(void) {
     delete client;
   }
       
-  if (httpCode == HTTP_CODE_OK) // if version received
+  if (httpCode == HTTP_CODE_OK) // verificação
   {
     payload.trim();
     if (payload.equals(FirmwareVer)) {
