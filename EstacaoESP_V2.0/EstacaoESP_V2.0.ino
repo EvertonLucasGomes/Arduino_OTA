@@ -41,7 +41,7 @@ char ssid[] = SECRET_SSID; // variáveis de conexão ao WiFi
 char pass[] = SECRET_PASS;
 
 String FirmwareVer = {
-  "2.0"
+  "3.0"
 };
 
 #define URL_fw_Version "https://raw.githubusercontent.com/EvertonLucasGomes/Arduino_OTA/main/bin_version.txt"
@@ -56,6 +56,8 @@ int FirmwareVersionCheck();
 
 void setup() {
   Serial.begin(SERIAL_DEBUG_BAUD);
+
+  Serial.print("Bela Atualização");
 
   pinMode(RainSensorPin, INPUT_PULLUP);
   attachInterrupt(digitalPinToInterrupt(RainSensorPin), isr_rg, FALLING);
