@@ -41,7 +41,7 @@ char ssid[] = SECRET_SSID; // variáveis de conexão ao WiFi
 char pass[] = SECRET_PASS;
 
 String FirmwareVer = {
-  "1.0"
+  "2.0"
 };
 
 #define URL_fw_Version "https://raw.githubusercontent.com/EvertonLucasGomes/Arduino_OTA/main/bin_version.txt"
