@@ -40,7 +40,7 @@ char ssid[] = SECRET_SSID;                                 // variáveis de cone
 char pass[] = SECRET_PASS;
 
 String FirmwareVer = {                                     // versão do firmware
-  "4.0"
+  "5.0"
 };
 
 #define URL_fw_Version "https://raw.githubusercontent.com/EvertonLucasGomes/Arduino_OTA/main/bin_version.txt"       // path do github
